@@ -184,8 +184,7 @@ As the released volumes pile up over time admins want to perform manual cleanup 
 last used, which is when the volume transitioned to `Released` phase.
 
 We can approach the solution in a more generic way and record a timestamp of when the volume transitioned to any phase,
-not just to `Released` phase. This is more informative for admins as it covers more scenarios while it still meets the
-original expectation described above.
+not just to `Released` phase. This allows anyone, incl. our perf tests, to measure time e.g. between a PV `Pending` and `Bound`
 
 <!--
 This section is for explicitly listing the motivation, goals, and non-goals of
