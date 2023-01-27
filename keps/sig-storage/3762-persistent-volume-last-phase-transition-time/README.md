@@ -284,7 +284,6 @@ Changes required for this KEP:
 * kube-controller-manager / PV controller
   * update the timestamp whenever PV controller transitions PV to a different phase (`pv.Status.Phase`)
   * remove the timestamp in `LastPhaseTransitionTime` field during volume status update when feature gate is disabled
-    * extend and use the existing function for disabling a status field: https://github.com/kubernetes/kubernetes/blob/d94261e904c90578e913c42c4d2a0fc8cb30937f/pkg/api/persistentvolumeclaim/util.go#L91
 
 <!--
 This section should contain enough information that the specifics of your
@@ -547,8 +546,8 @@ well as the [existing list] of feature gates.
 -->
 
 - [X] Feature gate (also fill in values in `kep.yaml`)
-  - Feature gate name:
-  - Components depending on the feature gate:
+  - Feature gate name: PersistentVolumeLastPhaseTransitionTime
+  - Components depending on the feature gate: kube-apiserver, kube-controller-manager
 - [ ] Other
   - Describe the mechanism:
   - Will enabling / disabling the feature require downtime of the control
