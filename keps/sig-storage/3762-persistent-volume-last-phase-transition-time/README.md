@@ -198,7 +198,7 @@ demonstrate the interest in a KEP within the wider Kubernetes community.
 ### Goals
 
 1) Introduce a new status field in PersistentVolumes.
-2) Update the new field with a timestamp every time a volume transitions to a different phase.
+2) Update the new field with a timestamp every time a volume transitions to a different phase (`pv.Status.Phase`).
 
 <!--
 List the specific goals of the KEP. What is it trying to achieve? How will we
