@@ -244,11 +244,7 @@ bogged down.
 
 #### Story 1
 
-As a cluster admin I want to use `Retain` policy for released volumes which is safer than `Delete` and gives me more
-control over volume cleanup. However, this in turn leads to a growing number of volumes that need to be monitored
-and cleaned up. The cleanup should be performed based how long the volume was not used by any claim. I should be able
-to list all volumes that are now in `Released` phase and see when it transitioned to this phase to decide which volumes
-can be safely removed.
+As a cluster admin I want to use `Retain` policy for released volumes, which is safer than `Delete`, and implement a reliable policy to delete volumes that are `Released` for more than X days.
 
 ### Notes/Constraints/Caveats (Optional)
 
