@@ -282,7 +282,7 @@ Changes required for this KEP:
   * validation should not allow updating to a point in time before the current timestamp
 
 * kube-controller-manager / PV controller
-  * update the timestamp whenever PV controller transitions PV to a different phase
+  * update the timestamp whenever PV controller transitions PV to a different phase (`pv.Status.Phase`)
   * remove the timestamp in `LastPhaseTransitionTime` field during volume status update when feature gate is disabled
     * extend and use the existing function for disabling a status field: https://github.com/kubernetes/kubernetes/blob/d94261e904c90578e913c42c4d2a0fc8cb30937f/pkg/api/persistentvolumeclaim/util.go#L91
 
