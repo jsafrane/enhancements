@@ -1,4 +1,4 @@
-title: PersistentVolume release timestamp
+title: PersistentVolume last phase transition time
 kep-number: 3762
 authors:
   - "@RomanBednar"
@@ -31,7 +31,7 @@ milestone:
 # The following PRR answers are required at alpha release
 # List the feature gate name and the components for which it must be enabled
 feature-gates:
-  - name: PersistentVolumeReleaseTimestamp
+  - name: PersistentVolumeLastPhaseTransitionTime
     components:
       - kube-apiserver
       - kube-controller-manager

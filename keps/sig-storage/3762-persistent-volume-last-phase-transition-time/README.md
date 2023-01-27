@@ -58,7 +58,7 @@ If none of those approvers are still appropriate, then changes to that list
 should be approved by the remaining approvers and/or the owning SIG (or
 SIG Architecture for cross-cutting KEPs).
 -->
-# KEP-3762: PersistentVolume release timestamp
+# KEP-3762: PersistentVolume last phase transition time
 
 <!--
 This is the title of your KEP. Keep it short, simple, and descriptive. A good
@@ -173,14 +173,19 @@ updates.
 [documentation style guide]: https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md
 -->
 
-We want to add a new PersistentVolumeStatus field, which would hold a timestamp of when the PersistentVolume was moved
-to `Released` state.
+We want to add a new PersistentVolumeStatus field, which would hold a timestamp of when a PersistentVolume last
+transitioned to a different phase.
 
 ## Motivation
 
-Some users have experienced data loss when using `Delete` retain policy and reverted to a safer `Retain` policy. 
+Some users have experienced data loss when using `Delete` retain policy and reverted to a safer `Retain` policy.
+With `Retain` policy all volumes that are retained and left unclaimed have their phase is set to `Released`.
 As the released volumes pile up over time admins want to perform manual cleanup based on the time when the volume was
-last used.
+last used, which is when the volume transitioned to `Released` phase.
+
+We can approach the solution in a more generic way and record a timestamp of when the volume transitioned to any phase,
+not just to `Released` phase. This is more informative for admins as it covers more scenarios while it still meets the
+original expectation described above.
 
 <!--
 This section is for explicitly listing the motivation, goals, and non-goals of
@@ -194,7 +199,7 @@ demonstrate the interest in a KEP within the wider Kubernetes community.
 ### Goals
 
 1) Introduce a new status field in PersistentVolumes.
-2) Update the new field with a timestamp of when the volume was released.
+2) Update the new field with a timestamp every time a volume transitions to a different phase.
 
 <!--
 List the specific goals of the KEP. What is it trying to achieve? How will we
@@ -221,13 +226,13 @@ The "Design Details" section below is for the real
 nitty-gritty.
 -->
 
-We need to update api server to support the newly proposed field and update PV controller to set a value of the new
-timestamp field when it changes volume phase. Also, if the feature gate is disabled the value must be re-set to `nil` 
-when updating or creating a volume.
+We need to update API server to support the newly proposed field and update PV controller to set a value of the new
+timestamp field when a volume transitions to a different phase. Also, if the feature gate is disabled the value must be
+re-set to `nil` when updating or creating a volume.
 
 The value of the field is not intended for use by any other Kubernetes components at this point and should be used only
 as a convenience feature for cluster admins. Cluster admins should be able to list and sort PersistentVolumes based on
-a timestamp which indicates when the volume was moved to a `Released` state.
+a timestamp which indicates when the volume transitioned to a different state. 
 
 ### User Stories (Optional)
 
@@ -242,7 +247,9 @@ bogged down.
 
 As a cluster admin I want to use `Retain` policy for released volumes which is safer than `Delete` and gives me more
 control over volume cleanup. However, this in turn leads to a growing number of volumes that need to be monitored
-and cleaned up. The cleanup should be performed based how long the volume was not used by any claim.
+and cleaned up. The cleanup should be performed based how long the volume was not used by any claim. I should be able
+to list all volumes that are now in `Released` phase and see when it transitioned to this phase to decide which volumes
+can be safely removed.
 
 ### Notes/Constraints/Caveats (Optional)
 
@@ -274,14 +281,14 @@ The new field is purely informative and should not introduce any risk.
 Changes required for this KEP:
 
 * kube-apiserver
-  * extend PersistentVolumeStatus type with `ReleaseTimestamp` field
+  * extend PersistentVolumeStatus type with `LastPhaseTransitionTime` field
+  * validation should check timestamp format 
+  * validation should allow update from `nil`
+  * validation should not allow updating to a point in time before the current timestamp
 
 * kube-controller-manager / PV controller
-  * update the timestamp whenever PV controller updates volume status to `VolumeReleased`
-    * Validation should check timestamp format 
-    * Validation should allow update from `nil`
-    * Validation should not allow updating to a point in time before the current timestamp
-  * remove the timestamp in `VolumeReleased` field during volume status update when feature gate is disabled
+  * update the timestamp whenever PV controller transitions PV to a different phase
+  * remove the timestamp in `LastPhaseTransitionTime` field during volume status update when feature gate is disabled
     * extend and use the existing function for disabling a status field: https://github.com/kubernetes/kubernetes/blob/d94261e904c90578e913c42c4d2a0fc8cb30937f/pkg/api/persistentvolumeclaim/util.go#L91
 
 <!--
@@ -340,7 +347,7 @@ This can inform certain test coverage improvements that we want to do before
 extending the production code to implement this enhancement.
 -->
 
-Changes will be implemented in pacakges with sufficient unit test coverage.
+Changes will be implemented in packages with sufficient unit test coverage.
 
 For any new or changed code we will add new unit tests.
 
@@ -374,10 +381,11 @@ We expect no non-infra related flakes in the last month as a GA graduation crite
 
 We plan to add new e2e tests which should not interfere with any other tests, and so they could run in parallel.
 
-While the timestamp of changing volume phase will represent an accurate point in time of when this occurred, the tests
-will have to consider the time difference between removing a PVC and changing the phase on the volume. Based on 
-exploratory testing we will define an appropriate time tolerance which will represent maximum time limit for the volume
-phase change.
+While the timestamp of volume phase transition will represent an accurate point in time of when it occurred, the tests
+will have to consider the time difference between user action that leads to a PV phase transition and the actual volume
+phase transition done by the PV controller.
+Based on exploratory testing we will define an appropriate time tolerance which will represent maximum time limit for
+the volume to transition phase.
 
 ### Graduation Criteria
 
@@ -476,9 +484,8 @@ enhancement:
 
 No change in cluster upgrade / downgrade process.
 
-When downgrading from a version that added the new timestamp field to persistent volumes
-we need to make sure that after downgrade the disabled fields are removed from the persistent
-volume spec.
+When downgrading from a version that added the new timestamp field PVs we need to make sure that after downgrade the
+values of the disabled field are removed.
 
 ### Version Skew Strategy
 
@@ -498,8 +505,8 @@ enhancement:
 | API server | KCM | Behavior                                                                                                                   |
 |------------|-----|----------------------------------------------------------------------------------------------------------------------------|
 | off | off | Existing Kubernetes behavior.                                                                                              |
-| on | off| Existing Kubernetes behavior, only users can set `pvc.Status.ReleaseTimestamp`.                        |
-| off | on | PV controller may try to change `pvc.Status.ReleaseTimestamp`, which will fail on the API server. |
+| on | off| Existing Kubernetes behavior, only users can set `pvc.Status.LastPhaseTransitionTime`.                        |
+| off | on | PV controller may try to change `pvc.Status.LastPhaseTransitionTime`, which will fail on the API server. |
 | on | on | New behavior.                                                                                                              
 
 ## Production Readiness Review Questionnaire
@@ -561,7 +568,7 @@ Any change of default behavior may be surprising to users or break existing
 automations, so be extremely careful here.
 -->
 
-No. It only adds a new informative field to persistent volume status.
+No. It only adds a new informative field to PV status.
 
 ###### Can the feature be disabled once it has been enabled (i.e. can we roll back the enablement)?
 
