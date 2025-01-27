@@ -680,10 +680,13 @@ All these e2e tests use only CSI volumes. All in-tree volume types that support 
 * Alpha of Phase 2 + 3:
   * Implemented `SELinuxChangePolicy` **with a separate alpha feature gate `SELinuxChangePolicy`** as preparation for `SELinuxMount` feature gate graduation.
   * Implemented SELinuxController.
-* Beta of Phase 2, alpha of phase 3:
+* Beta of Phase 2 + 3 (`SELinuxChangePolicy` is beta and enabled by default; `SELinuxMount` is beta, but disabled by default).
   * Telemetry numbers from OpenShift show that <5% of clusters would need to change any of their Pods.
-* GA:
+  * This phase signalizes that the feature is ready for real testing. Only non-breaking parts (`SELinuxChangePolicy`) are enabled by default.
+* GA of Phase 2 (`SELinuxChangePolicy` + `SELinuxMountReadWriteOncePod` are GA and locked to default):
   * All known issues fixed. Otherwise, we will GA Phase 1 only.
+* GA of Phase 3 (`SELinuxMount` is GA and locked to default):
+  * At least 1 release after `SELinuxChangePolicy` is GA to give cluster admins enough time to apply `SELinuxChangePolicy` to their Pods.
   * Telemetry numbers from OpenShift show that <2% of clusters would need to change any of their Pods (i.e. most clusters already applied opt-out).
 
 ### Upgrade / Downgrade Strategy
